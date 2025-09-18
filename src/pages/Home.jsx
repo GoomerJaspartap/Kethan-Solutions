@@ -110,7 +110,7 @@ const Home = () => {
               <div className="w-full">
                 <div className="rounded-lg overflow-hidden shadow-2xl">
                   <img 
-                    src="/Kethan-Solutions/Images/Home Page Image.jpg" 
+                    src="/Images/Home Page Image.jpg" 
                     alt="Kethan Solutions - Financial Services" 
                     className="w-full h-auto rounded-lg"
                     style={{ objectFit: 'contain', maxHeight: '600px' }}
