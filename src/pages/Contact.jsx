@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Phone, Mail, MapPin, Clock, Facebook, Twitter, Instagram, Linkedin, Send, CheckCircle } from 'lucide-react';
+import { Phone, Mail, MapPin, Clock, Facebook, Twitter, Instagram, Linkedin, Send, CheckCircle, AlertCircle } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
@@ -8,6 +8,7 @@ import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { useToast } from '../components/ui/use-toast';
+import { sendContactEmail } from '../lib/mailgun';
 
 const Contact = () => {
   const { toast } = useToast();
@@ -21,6 +22,7 @@ const Contact = () => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   const loanTypes = [
     'Home Loans',
@@ -78,29 +80,45 @@ const Contact = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setSubmitError('');
 
-    // Simulate form submission
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setIsSubmitted(true);
-      toast({
-        title: "Message Sent Successfully!",
-        description: "Thank you for reaching out! We will get back to you as soon as possible.",
-      });
+    try {
+      // Send email using Mailgun
+      const result = await sendContactEmail(formData);
       
-      // Reset form after 3 seconds
-      setTimeout(() => {
-        setIsSubmitted(false);
-        setFormData({
-          fullName: '',
-          loanType: '',
-          loanAmount: '',
-          preferredCommunication: '',
-          contactInfo: '',
-          message: ''
+      if (result.success) {
+        setIsSubmitted(true);
+        toast({
+          title: "Message Sent Successfully!",
+          description: "Thank you for reaching out! We will get back to you as soon as possible.",
         });
-      }, 3000);
-    }, 1500);
+        
+        // Reset form after 3 seconds
+        setTimeout(() => {
+          setIsSubmitted(false);
+          setFormData({
+            fullName: '',
+            loanType: '',
+            loanAmount: '',
+            preferredCommunication: '',
+            contactInfo: '',
+            message: ''
+          });
+        }, 3000);
+      } else {
+        throw new Error(result.error || 'Failed to send email');
+      }
+    } catch (error) {
+      console.error('Form submission error:', error);
+      setSubmitError(error.message || 'Failed to send message. Please try again.');
+      toast({
+        title: "Error",
+        description: "Failed to send message. Please try again or contact us directly.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const isFormValid = formData.fullName && formData.loanType && formData.loanAmount && formData.preferredCommunication && formData.contactInfo;
@@ -270,6 +288,17 @@ const Contact = () => {
                           className="mt-2 min-h-[120px]"
                         />
                       </div>
+
+                      {submitError && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center space-x-3"
+                        >
+                          <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
+                          <p className="text-red-700 text-sm">{submitError}</p>
+                        </motion.div>
+                      )}
 
                       <Button
                         type="submit"
